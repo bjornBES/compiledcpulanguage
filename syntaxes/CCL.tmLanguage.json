@@ -1,0 +1,77 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "CompiledCpuLanguage",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#LineNumber"
+		},
+		{
+			"include": "#identifier"
+		}
+	],
+	"repository": {
+		"identifier": 
+		{
+			"patterns": [
+				{
+					"name": "entity.name",
+					"match": "[A-Za-z_][A-Za-z_\\d]*"
+				},
+				{
+					"name": "constant.numeric",
+					"match": "[\\d][\\d_]*"
+				}
+			]
+		},
+		"LineNumber": {
+			"patterns": [
+				{
+					"name": "constant.numeric",
+					"match": "^[\\d]*:"
+				},
+				{
+					"name": "entity.name.tag",
+					"match": "\\\\\\\\"
+				}
+			]
+		},
+		"keywords": {
+			"patterns": [
+				{
+					"include": "#datatype"
+				},
+				{
+					"name": "keyword.control.CCL",
+					"match": "\\b(if|while|for|return|program|endprogram|endfunc|endfunction|func|function)\\b"
+				}
+			]
+		},
+		"datatype":
+		{
+			"patterns": [
+				{
+					"name": "keyword.control.CCL",
+					"match": "\\b(byte|void)\\b"
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.CCL",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.CCL",
+					"match": "\\\\."
+				}
+			]
+		}
+	},
+	"scopeName": "source.ccl"
+}

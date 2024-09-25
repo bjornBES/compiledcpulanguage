@@ -1,0 +1,67 @@
+{
+  "name": "compiledcpulanguage",
+  "displayName": "CompiledCpuLanguage",
+  "description": "This is the README for your extension \"compiledcpulanguage\". After writing up a brief description, we recommend including the following sections.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "main": "./out/extension.js",
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "ccl",
+        "aliases": [
+          "CompiledCpuLanguage",
+          "CCL"
+        ],
+        "extensions": [
+          ".CCL",
+          ".ccl"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "ccl",
+        "scopeName": "source.ccl",
+        "path": "./syntaxes/CCL.tmLanguage.json"
+      }
+    ],
+    "configurationDefaults": {
+      "[ccl]": {
+        "editor.rulers": [
+          7,
+          8,
+          40,
+          42
+        ],
+        "editor.lineNumbers": "off",
+        "editor.insertSpaces": true,
+        "editor.indentSize": 4,
+        "editor.tabSize": 4
+      }
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.31",
+    "@types/vscode": "~1.88.0",
+    "typescript": "~4.1.5"
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "glob": "^10.4.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
