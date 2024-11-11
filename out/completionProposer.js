@@ -84,47 +84,73 @@ class CCLCompletionProposer {
         }
         const Line = document.lineAt(position.line).text;
         const CurrentLine = Line.trim();
-        const LastLine = document.lineAt(position.line - 1).text;
-        const LastLineNumber = LastLine.trim().split(':')[0];
-        if (position.character <= 7) {
-            let lastNumberDec = Number(LastLineNumber);
-            let CurrentLineNumberStr = (lastNumberDec + 5).toString().padStart(7, '0');
-            NewItem(CurrentLineNumberStr, vscode.CompletionItemKind.Property, "", CurrentLineNumberStr);
+        GlobalVariabels_1.Update(document, position);
+        if (position.character == 1) {
+            NewItem("Section", vscode.CompletionItemKind.Property, "", "SECTION:");
+            NewSnippet("Section text", "makes a text section", "SECTION:TEXT");
+            NewSnippet("Section data", "makes a data section", "SECTION:DATA");
         }
-        else if (CurrentLine.includes(":")) {
-            let InProgram = InProgramTag(document, position.line);
-            if (InProgram) {
-                let InFunc = InFunction(document, position.line);
-                if (InFunc) {
+        if (CurrentLine.startsWith("SECTION:")) {
+            NewItem("String section", vscode.CompletionItemKind.Property, "", "STRING");
+            NewItem("Code section", vscode.CompletionItemKind.Property, "", "TEXT");
+            NewItem("Data section", vscode.CompletionItemKind.Property, "", "DATA");
+        }
+        if (position.character <= 7) {
+            if (GlobalVariabels_1.GlobalState.inTextSection) {
+                let LastLine;
+                let CurrentLineNumberStr;
+                if (position.line >= 2) {
+                    if (document.lineAt(position.line - 1).text.startsWith("SECTION")) {
+                        return GlobalVariabels_1.CompletionItemOutput;
+                    }
+                    LastLine = Number(document.lineAt(position.line - 1).text.trim().split(':')[0]);
+                    let LastLastLine = Number(document.lineAt(position.line - 2).text.trim().split(':')[0]);
+                    CurrentLineNumberStr = (LastLine + (LastLine - LastLastLine)).toString().padStart(7, '0');
                 }
                 else {
-                    NewItem("func", vscode.CompletionItemKind.Class, "", "func ");
-                    NewSnippet("func", "", "func ${1:name}.$2");
+                    if (document.lineAt(position.line - 1).text.startsWith("SECTION")) {
+                        return GlobalVariabels_1.CompletionItemOutput;
+                    }
+                    LastLine = Number(document.lineAt(position.line - 1).text.trim().split(':')[0]);
+                    CurrentLineNumberStr = (LastLine + 5).toString().padStart(7, '0');
                 }
+                NewItem(CurrentLineNumberStr, vscode.CompletionItemKind.Property, "", CurrentLineNumberStr + ":");
+            }
+            else if (GlobalVariabels_1.GlobalState.inDataSection) {
             }
             else {
-                NewItem("program", vscode.CompletionItemKind.Class, "", "program ");
-                NewSnippet("program", "", "program ${1:name}.$2");
+                NewSnippet("Section text", "", "SECTION:TEXT");
+                NewSnippet("Section text", "", "SECTION:DATA");
+            }
+        }
+        else if (CurrentLine.includes(":")) {
+            if (GlobalVariabels_1.GlobalState.inTextSection) {
+                let InProgram = GlobalVariabels_1.InProgramTag(document, position.line);
+                if (InProgram) {
+                    let InFunc = GlobalVariabels_1.InFunction(document, position.line);
+                    if (InFunc) {
+                        CreateSnippet("unsigned variabel", "Creates an unsigned variabel", "${1|byte,ushort,uint|} ${2:name} = ${3:value}.", "Makes a variabel that is unsigned");
+                    }
+                    else {
+                        NewItem("func", vscode.CompletionItemKind.Class, "", "func ");
+                        NewSnippet("func", "", "func ${1:name}.$2");
+                    }
+                }
+                else {
+                    NewItem("program", vscode.CompletionItemKind.Class, "", "program ");
+                    NewSnippet("program", "", "program ${1:name}.$2");
+                }
+            }
+            else if (GlobalVariabels_1.GlobalState.inDataSection) {
+                NewSnippet("Reserve data", "Reserves a byte array", "${1:name} RES ${2:Size}");
+            }
+            else {
             }
         }
         return GlobalVariabels_1.CompletionItemOutput;
     }
 }
 exports.CCLCompletionProposer = CCLCompletionProposer;
-function CodeCompletionLabels() {
-    for (let index = 0; index < GlobalVariabels_1.Labels.length; index++) {
-        const element = GlobalVariabels_1.Labels[index];
-        NewItem(element, vscode.CompletionItemKind.Field, "", element);
-    }
-    for (let index = 0; index < GlobalVariabels_1.Variabels.length; index++) {
-        const element = GlobalVariabels_1.Variabels[index];
-        NewItem(element, vscode.CompletionItemKind.Field, "", element);
-    }
-    for (let index = 0; index < GlobalVariabels_1.GlobalLabels.length; index++) {
-        const element = GlobalVariabels_1.GlobalLabels[index];
-        NewItem(element, vscode.CompletionItemKind.Field, "", element);
-    }
-}
 function NewItem(triggerCharacter, triggerKind, detail = "", insertText = "") {
     let BufferItem = new vscode.CompletionItem(triggerCharacter, triggerKind);
     let MarkDownText = new vscode.MarkdownString(detail);
@@ -133,8 +159,8 @@ function NewItem(triggerCharacter, triggerKind, detail = "", insertText = "") {
     BufferItem.insertText = insertText;
     GlobalVariabels_1.CompletionItemOutput.push(BufferItem);
 }
-function NewSnippet(triggerCharacter, detail = "", insertText = "") {
-    let BufferItem = new vscode.CompletionItem(triggerCharacter, vscode.CompletionItemKind.Snippet);
+function NewSnippet(name, detail = "", insertText = "") {
+    let BufferItem = new vscode.CompletionItem(name, vscode.CompletionItemKind.Snippet);
     let MarkDownText = new vscode.MarkdownString(detail);
     let Snippet = new vscode.SnippetString(insertText);
     MarkDownText.supportHtml = true;
@@ -142,29 +168,10 @@ function NewSnippet(triggerCharacter, detail = "", insertText = "") {
     BufferItem.insertText = Snippet;
     GlobalVariabels_1.CompletionItemOutput.push(BufferItem);
 }
-function InProgramTag(document, CurrentLineNumber) {
-    let Textdocument = document.getText().split(GlobalVariabels_2.NewLine);
-    for (let index = CurrentLineNumber; index < Textdocument.length; index--) {
-        const element = Textdocument[index];
-        if (element.includes("endprogram") || element.includes("end program")) {
-            return false;
-        }
-        else if (element.includes("program ")) {
-            return true;
-        }
-    }
-    return false;
-}
-function InFunction(document, CurrentLineNumber) {
-    let Textdocument = document.getText().split(GlobalVariabels_2.NewLine);
-    for (let index = CurrentLineNumber; index < Textdocument.length; index--) {
-        const element = Textdocument[index];
-        if (element.includes("endfunc") || element.includes("end func")) {
-            return false;
-        }
-        else if (element.includes("func ")) {
-            return true;
-        }
-    }
-    return false;
+function CreateSnippet(name, detail, code, description) {
+    const snippet = new vscode.CompletionItem(name, vscode.CompletionItemKind.Snippet);
+    snippet.insertText = new vscode.SnippetString(code);
+    snippet.documentation = new vscode.MarkdownString(description);
+    snippet.detail = detail;
+    GlobalVariabels_1.CompletionItemOutput.push(snippet);
 }

@@ -3,25 +3,31 @@
 	"name": "CompiledCpuLanguage",
 	"patterns": [
 		{
-			"include": "#keywords"
+			"include": "#Comment"
 		},
 		{
-			"include": "#strings"
+			"include": "#identifier"
+		},
+		{
+			"include": "#keywords"
 		},
 		{
 			"include": "#LineNumber"
 		},
 		{
-			"include": "#identifier"
+			"include": "#strings"
+		},
+		{
+			"match": "[A-Za-z][A-Za-z]*",
+			"name":"constant.character"
 		}
 	],
 	"repository": {
-		"identifier": 
-		{
+		"identifier": {
 			"patterns": [
 				{
-					"name": "entity.name",
-					"match": "[A-Za-z_][A-Za-z_\\d]*"
+					"name": "constant.numeric",
+					"match": "0x[\\dA-Fa-f][\\dA-Fa-f_]*"
 				},
 				{
 					"name": "constant.numeric",
@@ -41,23 +47,82 @@
 				}
 			]
 		},
+		"Comment": {
+			"patterns": [
+				{
+					"name":"comment.line",
+					"match": "^@.*"
+				}
+			]
+		},
 		"keywords": {
 			"patterns": [
 				{
 					"include": "#datatype"
 				},
 				{
+					"name":"keyword.control.register",
+					"match": "@[A-Z][A-Za-z\\d]*"
+				},
+				{
 					"name": "keyword.control.CCL",
-					"match": "\\b(if|while|for|return|program|endprogram|endfunc|endfunction|func|function)\\b"
+					"match": "\\b(if|while|for|return|program|endprogram|endfunc|endfunction|func|function|call|invoke|in|out|then|elif|enif|endif|eif|ret|else)\\b"
+				},
+				{
+					"name":"keyword.control.CCL",
+					"match": "RENAME"
+				},
+				{
+					"name":"keyword.control.CCL",
+					"match": "^#inc"
+				},
+				{
+					"name": "keyword.control.CCL",
+					"match": "^SECTION:\\b(TEXT|DATA|STRING)\\b"
+				},
+				{
+					"name": "keyword.control.CCL",
+					"match": "\\sRES\\s"
 				}
 			]
 		},
-		"datatype":
-		{
+		"datatype": {
 			"patterns": [
 				{
+					"include": "#datatypeSize"
+				},
+				{
 					"name": "keyword.control.CCL",
-					"match": "\\b(byte|void)\\b"
+					"match": "\\b(void)\\b"
+				}
+			]
+		},
+		"datatypeSize": {
+			"patterns": [
+				{
+					"name": "keyword.control.pointer.CCL",
+					"match": "\\b(near|short|long|far)\\s\\b(char|byte|sbyte)\\*"
+				},
+				{
+					"name": "keyword.control.pointer.CCL",
+					"match": "\\b(near|short|long|far)\\s\\b(ushort|word|short|sword)\\*"
+				},
+				{
+					"name": "keyword.control.pointer.CCL",
+					"match": "\\b(near|short|long|far)\\s\\b(dword|int|uint)\\*"
+				},
+
+				{
+					"name": "keyword.control.CCL",
+					"match": "\\b(char|byte|sbyte)\\b"
+				},
+				{
+					"name": "keyword.control.CCL",
+					"match": "\\b(ushort|word|short|sword)\\b"
+				},
+				{
+					"name": "keyword.control.CCL",
+					"match": "\\b(dword|int|uint)\\b"
 				}
 			]
 		},

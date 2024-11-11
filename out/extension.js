@@ -41,11 +41,11 @@ function activate(context) {
     }));
     context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => {
         const document = event.document;
-        const position = event.contentChanges[0].range.start;
-        Error_1.provideError(document, position);
+        Error_1.provideError(document);
     }));
     context.subscriptions.push(vscode.languages.registerHoverProvider(selector, new hover_1.CCLHoverProvider()));
     context.subscriptions.push(vscode.languages.registerCompletionItemProvider(selector, new completionProposer_1.CCLCompletionProposer(), '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', ':'));
+    //context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider(selector, new CCLDocumentSymbolProvider()))
 }
 exports.activate = activate;
 function deactivate() {

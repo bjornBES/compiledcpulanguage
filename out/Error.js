@@ -22,10 +22,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.provideError = void 0;
 const vscode = __importStar(require("vscode"));
 const GlobalShit = __importStar(require("./GlobalVariabels"));
+const GlobalVariabels_1 = require("./GlobalVariabels");
 let LineNumbers = [];
 let diagnostic = [];
+let KeywordsInProgram = [
+    "func",
+    "function"
+];
 const diagnosticCollection = vscode.languages.createDiagnosticCollection(GlobalShit.LangId);
-function provideError(document, position) {
+function provideError(document) {
+    GlobalShit.GetSymbols(document);
     diagnostic = [];
     LineNumbers = [];
     if (document.languageId == GlobalShit.LangId) {
@@ -37,28 +43,74 @@ function provideError(document, position) {
             if (element == "") {
                 continue;
             }
-            if (line.length != 32) {
-                let range = new vscode.Range(index, 8, index, 40);
-                diagnostic.push(new vscode.Diagnostic(range, "Line needs to be 32 characters long with spaces", vscode.DiagnosticSeverity.Error));
+            if (element.startsWith("@")) {
+                continue;
             }
-            if (LineNumbers.includes(Linenumber)) {
-                let range = new vscode.Range(index, 0, index, 7);
-                diagnostic.push(new vscode.Diagnostic(range, "two lines can't have the same line number", vscode.DiagnosticSeverity.Error));
+            else if (element.startsWith("#")) {
+                continue;
             }
-            if (element[7] != ':') {
-                let range = new vscode.Range(index, 0, index, 7);
-                diagnostic.push(new vscode.Diagnostic(range, "needs ':' like this 0000000:", vscode.DiagnosticSeverity.Error));
+            if (Linenumber == "SECTION") {
+                if (line == "TEXT") {
+                    GlobalVariabels_1.GlobalState.inTextSection = true;
+                    GlobalVariabels_1.GlobalState.inDataSection = false;
+                }
+                else if (line == "DATA") {
+                    GlobalVariabels_1.GlobalState.inDataSection = true;
+                    GlobalVariabels_1.GlobalState.inTextSection = false;
+                }
+                if (element[7] != ':') {
+                    let range = new vscode.Range(index, 0, index, 7);
+                    diagnostic.push(new vscode.Diagnostic(range, "needs ':' like this SECTION:", vscode.DiagnosticSeverity.Error));
+                }
+                if (line == "") {
+                    let range = new vscode.Range(index, 8, index, 70);
+                    diagnostic.push(new vscode.Diagnostic(range, "Line needs to have a section name like TEXT or DATA", vscode.DiagnosticSeverity.Error));
+                }
             }
-            if (element[40] != '\\' || element[41] != '\\') {
-                let range = new vscode.Range(index, 40, index, 42);
-                diagnostic.push(new vscode.Diagnostic(range, "need '\\\\' at the end of the line", vscode.DiagnosticSeverity.Error));
-            }
-            if (!line.trim().endsWith('.')) {
-                let range = new vscode.Range(index, 8, index, 40);
-                diagnostic.push(new vscode.Diagnostic(range, "the line needs to end with a '.'", vscode.DiagnosticSeverity.Error));
+            else {
+                if (GlobalVariabels_1.GlobalState.inTextSection) {
+                    if (element[7] != ':') {
+                        let range = new vscode.Range(index, 0, index, 7);
+                        diagnostic.push(new vscode.Diagnostic(range, "needs ':' like this 0000000:", vscode.DiagnosticSeverity.Error));
+                    }
+                    if (line.length != 64) {
+                        let range = new vscode.Range(index, 8, index, 70);
+                        diagnostic.push(new vscode.Diagnostic(range, "Line needs to be 64 characters long with spaces", vscode.DiagnosticSeverity.Error));
+                    }
+                    if (LineNumbers.includes(Linenumber)) {
+                        let range = new vscode.Range(index, 0, index, 7);
+                        diagnostic.push(new vscode.Diagnostic(range, "two lines can't have the same line number", vscode.DiagnosticSeverity.Error));
+                    }
+                    if (element[72] != '\\' || element[73] != '\\') {
+                        let range = new vscode.Range(index, 72, index, 73);
+                        diagnostic.push(new vscode.Diagnostic(range, "need '\\\\' at the end of the line", vscode.DiagnosticSeverity.Error));
+                    }
+                    if (!line.trim().endsWith('.')) {
+                        let range = new vscode.Range(index, 8, index, 70);
+                        diagnostic.push(new vscode.Diagnostic(range, "the line needs to end with a '.'", vscode.DiagnosticSeverity.Error));
+                    }
+                }
+                else if (GlobalVariabels_1.GlobalState.inDataSection) {
+                    if (!Linenumber.startsWith("       ")) {
+                        let range = new vscode.Range(index, 0, index, 7);
+                        diagnostic.push(new vscode.Diagnostic(range, "DATA section needs 7 spaces", vscode.DiagnosticSeverity.Error));
+                    }
+                }
+                else {
+                }
+                LineNumbers.push(Linenumber);
+                let InProgram = GlobalShit.InProgramTag(document, index);
+                if (InProgram) {
+                    let segment = line.split('.');
+                    for (let i = 0; i < segment.length; i++) {
+                        const element = segment[i];
+                        let a = element.split(' ');
+                        if (!KeywordsInProgram.includes(a[0])) {
+                        }
+                    }
+                }
             }
             //debugger;
-            LineNumbers.push(Linenumber);
         }
         diagnosticCollection.set(document.uri, diagnostic);
     }

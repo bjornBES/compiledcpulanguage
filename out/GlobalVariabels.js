@@ -19,43 +19,128 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GetSymbols = exports.CompletionItemOutput = exports.NewLine = exports.LangId = exports.URIS = exports.FilePaths = exports.GlobalLabels = exports.Labels = exports.Variabels = exports.RegisterTooltipFilePath = exports.InstructionTooltipFilePath = void 0;
+exports.InFunction = exports.InProgramTag = exports.GetSymbols = exports.Update = exports.CompletionItemOutput = exports.NewLine = exports.LangId = exports.URIS = exports.FilePaths = exports.GlobalState = exports.functions = exports.RegisterTooltipFilePath = exports.InstructionTooltipFilePath = void 0;
 const vscode = __importStar(require("vscode"));
 let basePath = "C:/Users/bjorn/Desktop/VideoProjects/GamingCPU_Project/languages/assembly/bcg-assembly-language";
 exports.InstructionTooltipFilePath = basePath + "/files/Tooltips.md";
 exports.RegisterTooltipFilePath = basePath + "/files/TooltipsRegister.md";
-exports.Variabels = [];
-exports.Labels = [];
-exports.GlobalLabels = [];
+exports.functions = [];
+exports.GlobalState = {
+    inTextSection: false,
+    inDataSection: false
+};
 exports.FilePaths = [];
 exports.URIS = new Set();
 exports.LangId = "ccl";
 exports.NewLine = vscode.window.activeTextEditor?.document.eol === vscode.EndOfLine.LF ? "\n" : "\r\n";
 exports.CompletionItemOutput = [];
-function GetSymbols(document) {
-    exports.Variabels = [];
-    exports.Labels = [];
-    exports.GlobalLabels = [];
-    for (let docIndex = 0; docIndex < exports.FilePaths.length; docIndex++) {
-        const doc = exports.FilePaths[docIndex];
-        for (let i = 0; i < doc.lineCount; i++) {
-            const line = doc.lineAt(i).text.replace(/[\s]*\;\s/, "");
-            if (line.trim().startsWith('$') && doc.uri === document.uri) {
-                if (exports.Variabels.includes(line) === false) {
-                    exports.Variabels.push(line.replace('$', '').split(' ', 2)[0]);
-                }
+function Update(document, position) {
+    for (let line = position.line; line > -1; line--) {
+        const element = document.lineAt(line).text;
+        if (element.startsWith("SECTION")) {
+            let sectionName = element.split(':')[1];
+            if (sectionName == "TEXT") {
+                exports.GlobalState.inTextSection = true;
+                exports.GlobalState.inDataSection = false;
+                break;
             }
-            if (line.trim().endsWith(':') && line.trim().toLowerCase().startsWith(".global")) {
-                if (exports.GlobalLabels.includes(line.trim()) === false) {
-                    exports.GlobalLabels.push(line.split(' ')[1].replace(":", ""));
-                }
-            }
-            else if (line.trim().endsWith(':') && doc.uri === document.uri) {
-                if (exports.Labels.includes(line.trim()) === false) {
-                    exports.Labels.push(line.replace(':', '').split(' ')[0].trimStart());
-                }
+            else if (sectionName == "DATA") {
+                exports.GlobalState.inDataSection = true;
+                exports.GlobalState.inTextSection = false;
+                break;
             }
         }
     }
 }
+exports.Update = Update;
+function GetSymbols(document) {
+    for (let docIndex = 0; docIndex < exports.FilePaths.length; docIndex++) {
+        const doc = exports.FilePaths[docIndex];
+        for (let i = 0; i < doc.lineCount; i++) {
+            const element = doc.lineAt(i);
+            if (element == undefined) {
+            }
+            if (element.text == '') {
+                continue;
+            }
+            else if (element.text.startsWith("@")) {
+                continue;
+            }
+            const line = element.text.split(':')[1].split('\\\\')[0];
+            const tokens = line.split('.');
+            for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex++) {
+                const token = tokens[tokenIndex];
+                if (token.startsWith("function") || token.startsWith("func")) {
+                    let functionLine = token.replace(token.split(' ')[0] + " ", "");
+                    let functionName = token.split(' ')[1].split('(')[0];
+                    //debugger;
+                }
+            }
+            /*
+            if (line.trim().startsWith('$') && doc.uri === document.uri) {
+                if (Variabels.includes(line) === false) {
+                    Variabels.push(line.replace('$', '').split(' ', 2)[0]);
+                }
+            }
+            if (line.trim().endsWith(':') && line.trim().toLowerCase().startsWith(".global")) {
+                if (GlobalLabels.includes(line.trim()) === false) {
+                    GlobalLabels.push(line.split(' ')[1].replace(":", ""));
+                }
+            }
+            else if (line.trim().endsWith(':') && doc.uri === document.uri) {
+                if (Labels.includes(line.trim()) === false) {
+                    Labels.push(line.replace(':', '').split(' ')[0].trimStart());
+                }
+            }
+            */
+        }
+    }
+}
 exports.GetSymbols = GetSymbols;
+function InProgramTag(document, CurrentLineNumber) {
+    let Textdocument = document.getText().split(exports.NewLine);
+    for (let index = CurrentLineNumber; index < Textdocument.length; index--) {
+        if (index < 0) {
+            break;
+        }
+        const element = Textdocument[index];
+        if (element == undefined) {
+            debugger;
+            continue;
+        }
+        if (element == '') {
+            continue;
+        }
+        if (element.includes("endprogram") || element.includes("end program")) {
+            return false;
+        }
+        else if (element.includes("program ")) {
+            return true;
+        }
+    }
+    return false;
+}
+exports.InProgramTag = InProgramTag;
+function InFunction(document, CurrentLineNumber) {
+    let Textdocument = document.getText().split(exports.NewLine);
+    for (let index = CurrentLineNumber; index < Textdocument.length; index--) {
+        if (index < 0) {
+            break;
+        }
+        const element = Textdocument[index];
+        if (element == undefined) {
+            continue;
+        }
+        if (element == '') {
+            continue;
+        }
+        if (element.includes("endfunc") || element.includes("end func")) {
+            return false;
+        }
+        else if (element.includes("func ")) {
+            return true;
+        }
+    }
+    return false;
+}
+exports.InFunction = InFunction;
